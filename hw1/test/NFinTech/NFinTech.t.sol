@@ -8,6 +8,8 @@ import "../../src/NFinTech/NFinTech.sol";
 /// @author Louis Tsai
 /// @notice Do NOT modify this contract or you might get 0 points for the assingment.
 
+
+
 contract NFinTechTest is Test {
     NFinTech internal nft;
     address internal Bob;

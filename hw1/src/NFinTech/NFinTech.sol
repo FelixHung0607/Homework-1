@@ -94,6 +94,7 @@ contract NFinTech is IERC721 {
             revert();
         }
         _tokenApproval[tokenId] = to;
+        emit Approval(ownerOf(tokenId), to, tokenId);
     }
 
     function getApproved(uint256 tokenId) public view returns (address operator) {
@@ -120,20 +121,50 @@ contract NFinTech is IERC721 {
                 _balances[to] += 1;
             }
         }
-
+        if (to == address(0)) {
+            revert();
+        }
         _owner[tokenId] = to;
 
         emit Transfer(from, to, tokenId);
 
     }
 
+    function checkOnERC721Received(
+        address operator,
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory data
+    ) internal {
+        if (to.code.length > 0) {
+            try IERC721TokenReceiver(to).onERC721Received(operator, from, tokenId, data) returns (bytes4 retval) {
+                if (retval != IERC721TokenReceiver.onERC721Received.selector) {
+                    // Token rejected
+                    revert();
+                }
+            } catch (bytes memory reason) {
+                if (reason.length == 0) {
+                    // non-IERC721Receiver implementer
+                    revert();
+                } else {
+                    /// @solidity memory-safe-assembly
+                    assembly {
+                        revert(add(32, reason), mload(reason))
+                    }
+                }
+            }
+        }
+    }
+
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes calldata data) public {
         // TODO: please add your implementaiton here
-        safeTransferFrom(from, to, tokenId);
+        transferFrom(from, to, tokenId);
+        checkOnERC721Received(msg.sender, from, to, tokenId, data);
     }
 
     function safeTransferFrom(address from, address to, uint256 tokenId) public {
-        safeTransferFrom(from, to, tokenId, "");
+        safeTransferFrom(from, to, tokenId, msg.data);
         // TODO: please add your implementaiton here
     }
 }
